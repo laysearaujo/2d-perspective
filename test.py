@@ -13,11 +13,11 @@ def select_points(event, x, y, flags, param):
         temp_image = image.copy()  # Copiar a imagem original para desenhar nela
         # Desenhar todos os pontos já selecionados
         for i, point in enumerate(points):
-            cv2.circle(temp_image, point, 5, (0, 0, 255), -1)  # Desenha um ponto vermelho
+            cv2.circle(temp_image, point, 20, (0, 0, 255), -1)  # Desenha um ponto vermelho
         # Se houver pelo menos dois pontos, desenhar linhas entre eles
         if len(points) > 1:
             for i in range(len(points) - 1):
-                cv2.line(temp_image, points[i], points[i + 1], (0, 255, 0), 2)  # Linha verde
+                cv2.line(temp_image, points[i], points[i + 1], (0, 255, 0), 10)  # Linha verde
         # Se houver 4 pontos, desenhar o quadrado
         if len(points) == 4:
             cv2.line(temp_image, points[0], points[1], (255, 0, 0), 2)
