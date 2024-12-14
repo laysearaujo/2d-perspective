@@ -45,7 +45,7 @@ def perspective_transform(image, points):
     result = cv2.warpPerspective(image, matrix, (width, height))
     return result
 
-# 2. Retificação Afin (Affine Transform)
+# 2. Retificação Afim (Affine Transform)
 def affine_transform(image, points):
     if len(points) < 3:
         print("A transformação afim requer exatamente 3 pontos.")
@@ -62,21 +62,7 @@ def affine_transform(image, points):
     result = cv2.warpAffine(image, matrix, (300, 300))
     return result
 
-# 3. Transformada Similaridade
-def similarity_transform(image, points):
-    if len(points) < 2:
-        print("A transformação de similaridade requer pelo menos 2 pontos.")
-        return None
-
-    scale = 1.5  # Fator de escala
-    angle = 15  # Ângulo de rotação
-
-    center = points[0]  # Usa o primeiro ponto como centro
-    matrix = cv2.getRotationMatrix2D(center, angle, scale)
-    result = cv2.warpAffine(image, matrix, (image.shape[1], image.shape[0]))
-    return result
-
-# 4. Transformada de Escala e Rotação (Manual)
+# 3. Transformada de Escala e Rotação (Manual)
 def scale_and_rotate(image, scale_factor, angle):
     (h, w) = image.shape[:2]
     center = (w // 2, h // 2)
@@ -89,7 +75,6 @@ def scale_and_rotate(image, scale_factor, angle):
 def main():
     global points, temp_image
 
-    # Carrega a imagem
     image_path = "tabuleiro.jpeg"  # Altere conforme sua imagem
     image = cv2.imread(image_path)
     if image is None:
@@ -100,15 +85,14 @@ def main():
         print("\nEscolha o método de retificação:")
         print("1 - Retificação Perspectiva")
         print("2 - Transformada Afim")
-        print("3 - Transformada Similaridade")
-        print("4 - Escala e Rotação Manual")
+        print("3 - Escala e Rotação Manual")
         print("0 - Sair")
         
         choice = input("Digite sua escolha: ")
         if choice == "0":
             break
 
-        points = []  # Limpa os pontos
+        points = []
         temp_image = image.copy()
         cv2.imshow("Selecione os pontos", temp_image)
         cv2.setMouseCallback("Selecione os pontos", select_points)
@@ -121,9 +105,7 @@ def main():
             result = perspective_transform(image, points)
         elif choice == "2" and len(points) >= 3:
             result = affine_transform(image, points)
-        elif choice == "3" and len(points) >= 2:
-            result = similarity_transform(image, points)
-        elif choice == "4":
+        elif choice == "3":
             scale = float(input("Fator de escala (ex: 1.2): "))
             angle = float(input("Ângulo de rotação (graus): "))
             result = scale_and_rotate(image, scale, angle)
@@ -132,7 +114,7 @@ def main():
             continue
 
         if result is not None:
-            cv2.imshow("Resultado da Retificação", result)
+            cv2.imshow("Resultado da Retificacao", result)
             cv2.imwrite("resultado_retificacao.jpeg", result)
             print("Imagem salva como resultado_retificacao.jpeg")
         else:
