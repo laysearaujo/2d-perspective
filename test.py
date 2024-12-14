@@ -132,6 +132,26 @@ def manual_get_rotation_matrix_2d(center, angle, scale_factor):
     
     return rotation_matrix
 
+# Função manual para aplicar a transformação afim
+def manual_warp_affine(image, matrix, output_size):
+    rows, cols = image.shape[:2]
+    result = np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)  # A imagem de saída
+
+    for y in range(output_size[1]):
+        for x in range(output_size[0]):
+            # Calculando as coordenadas originais (x, y) na imagem de entrada
+            orig_x = matrix[0, 0] * x + matrix[0, 1] * y + matrix[0, 2]
+            orig_y = matrix[1, 0] * x + matrix[1, 1] * y + matrix[1, 2]
+
+            # Verificando se as coordenadas estão dentro dos limites da imagem original
+            if 0 <= orig_x < cols and 0 <= orig_y < rows:
+                # Pegando o valor do pixel da imagem original
+                orig_x = int(orig_x)
+                orig_y = int(orig_y)
+                result[y, x] = image[orig_y, orig_x]
+    
+    return result
+
 # Função para aplicar a transformação afim com translação, rotação e escala
 def affine_with_params(image, points, trans_x, trans_y, scale_factor, angle):
     # Criando a matriz de transformação afim manualmente
@@ -147,8 +167,8 @@ def affine_with_params(image, points, trans_x, trans_y, scale_factor, angle):
     rotation_matrix[0, 2] += trans_x
     rotation_matrix[1, 2] += trans_y
     
-    # Aplicando a transformação afim
-    result = cv2.warpAffine(image, rotation_matrix, (cols, rows))
+    # Aplicando a transformação afim manualmente
+    result = manual_warp_affine(image, rotation_matrix, (cols, rows))
     return result
 
 # Função para aplicar a transformação de perspectiva
