@@ -37,7 +37,7 @@ def order_points(pts):
 # 1. Retificação Perspectiva
 def perspective_transform(image, points):
     ordered_pts = order_points(np.array(points, dtype="float32"))
-    width, height = 500, 500  # Dimensão desejada para a saída
+    width, height = 500, 500
 
     dst_points = np.array([
         [0, 0],
@@ -103,10 +103,9 @@ def main():
         cv2.setMouseCallback("Selecione os pontos", select_points)
 
         print("\nSelecione os pontos na imagem com o mouse.")
-        while len(points) < 4:  # Aguarda até 4 pontos serem selecionados
-            cv2.waitKey(1)  # Atualiza a janela de imagem enquanto o usuário seleciona os pontos
+        while len(points) < 4:
+            cv2.waitKey(1)
 
-        # Executa o método escolhido
         if choice == "1" and len(points) == 4:
             result = perspective_transform(image, points)
         elif choice == "2" and len(points) >= 3:
@@ -123,11 +122,12 @@ def main():
             cv2.imshow("Resultado da Retificação", result)
             cv2.imwrite("resultado_retificacao.jpeg", result)
             print("Imagem salva como resultado_retificacao.jpeg")
+
+            print("\nPressione qualquer tecla na imagem para voltar ao menu.")
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
         else:
             print("Não foi possível aplicar a transformação.")
-
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
