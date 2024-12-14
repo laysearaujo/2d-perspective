@@ -12,6 +12,14 @@
 - **Imagem de Entrada**: Uma foto do tabuleiro com perspectiva inclinada (como a "tabuleiro.jpeg").
 - **Resultado Esperado**: O tabuleiro aparece **plano e alinhado**.
 
+#### **Implementação Manual**:
+A transformação de perspectiva foi implementada manualmente para proporcionar um maior controle sobre o processo. Ao invés de usar a função `cv2.getPerspectiveTransform` e `cv2.warpPerspective` do OpenCV, a transformação foi realizada da seguinte maneira:
+
+- **Cálculo da Matriz de Transformação**: Usamos as fórmulas para calcular a matriz de transformação de perspectiva com base nos 4 pontos selecionados pelo usuário. A matriz foi construída manualmente e aplicada à imagem para corrigir a distorção de perspectiva.
+
+- **Aplicação da Transformação**: A transformação foi aplicada pixel por pixel, utilizando a matriz de transformação calculada.
+
+
 ---
 
 ### **2. Transformação Afim**
@@ -25,6 +33,15 @@
 #### **Exemplo**:
 - **Imagem de Entrada**: Foto de um documento ou quadro ligeiramente inclinado.
 - **Resultado Esperado**: A imagem será **alinhada horizontalmente**, mantendo sua forma retangular.
+
+### **Implementação Manual**:
+A transformação afim foi implementada manualmente para melhor controle e entendimento dos cálculos envolvidos. Ao invés de usar a função `cv2.getAffineTransform` e `cv2.warpAffine` do OpenCV, a transformação foi realizada da seguinte forma:
+
+- **Matriz de Rotação e Escala**: Calculamos a matriz de rotação e escala manualmente, usando o centro da imagem para aplicar as transformações de rotação e escala.
+
+- **Adição de Translação**: A translação foi integrada à matriz de transformação, ajustando a posição da imagem de acordo com os parâmetros fornecidos.
+
+- **Aplicação da Transformação**: A transformação foi aplicada pixel por pixel, alterando as coordenadas de cada ponto da imagem com base na matriz calculada.
 
 ---
 
