@@ -111,18 +111,39 @@ def warp_perspective(image, matrix, dimensions):
 
     return result
 
-# Função para aplicar a transformação afim
+# Função para calcular a matriz de rotação manualmente
+def manual_get_rotation_matrix_2d(center, angle, scale_factor):
+    # Convertendo o ângulo para radianos
+    angle_rad = np.deg2rad(angle)
+    
+    # Calculando os valores do cosseno e seno
+    cos_theta = np.cos(angle_rad)
+    sin_theta = np.sin(angle_rad)
+    
+    # Criando a matriz de rotação (sem a translação)
+    rotation_matrix = np.array([
+        [cos_theta * scale_factor, -sin_theta * scale_factor, 0],
+        [sin_theta * scale_factor, cos_theta * scale_factor, 0],
+    ])
+    
+    # Deslocando a matriz para o centro da rotação
+    rotation_matrix[0, 2] = center[0] - center[0] * cos_theta * scale_factor + center[1] * sin_theta * scale_factor
+    rotation_matrix[1, 2] = center[1] - center[0] * sin_theta * scale_factor - center[1] * cos_theta * scale_factor
+    
+    return rotation_matrix
+
+# Função para aplicar a transformação afim com translação, rotação e escala
 def affine_with_params(image, points, trans_x, trans_y, scale_factor, angle):
-    # Criando a matriz de transformação afim
+    # Criando a matriz de transformação afim manualmente
     rows, cols = image.shape[:2]
     
     # Calculando o centro da imagem para aplicar a rotação
     center = (cols // 2, rows // 2)
 
-    # Gerando a matriz de rotação
-    rotation_matrix = cv2.getRotationMatrix2D(center, angle, scale_factor)
+    # Obtendo a matriz de rotação manual
+    rotation_matrix = manual_get_rotation_matrix_2d(center, angle, scale_factor)
     
-    # Adicionando a translação à matriz de rotação
+    # Adicionando a translação
     rotation_matrix[0, 2] += trans_x
     rotation_matrix[1, 2] += trans_y
     
