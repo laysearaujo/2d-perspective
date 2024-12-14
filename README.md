@@ -1,4 +1,4 @@
-## Retificação 2D: Métodos, Exemplos e Resultados
+# Retificação 2D: Métodos, Exemplos e Resultados
 
 ### **1. Transformação de Perspectiva**
 - **Objetivo**: Corrigir a perspectiva de uma imagem distorcida, transformando um plano inclinado para uma visão "reta".
@@ -43,7 +43,42 @@ A transformação afim foi implementada manualmente para melhor controle e enten
 
 - **Aplicação da Transformação**: A transformação foi aplicada pixel por pixel, alterando as coordenadas de cada ponto da imagem com base na matriz calculada.
 
----
+## Como Rodar
+
+### Passo 1: Instalar Dependências
+
+Para rodar o projeto, você precisará instalar algumas dependências. O projeto utiliza o Python 3.x e bibliotecas como OpenCV para manipulação de imagens.
+
+Crie um ambiente virtual (opcional, mas recomendado):
+
+```` bash
+python -m venv venv
+source venv/bin/activate  # Para sistemas Unix/Mac
+venv\Scripts\activate     # Para Windows
+````
+
+Em seguida, instale as dependências:
+
+```` bash
+pip install -r requirements.txt
+````
+
+## Passo 2: Preparar as Imagens
+
+Certifique-se de ter a imagem de entrada tabuleiro.jpeg na mesma pasta do script ou atualize o caminho no código na linha indicada, conforme necessário.
+
+## Passo 3: Executar o Script
+Para rodar o projeto, execute o script Python:
+
+```` bash
+python test.py
+`````
+
+O script solicitará que você escolha o método de transformação desejado e, em seguida, permita que você selecione os pontos da imagem para aplicar a transformação.
+
+## Requisitos
+- Python 3.x
+- OpenCV
 
 ## **Organização dos Resultados**
 Para cada método:
