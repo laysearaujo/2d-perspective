@@ -79,6 +79,25 @@ def warp_perspective(image, matrix, dimensions):
         print(f"Erro ao aplicar a transformação de perspectiva: {e}")
         return None
 
+# Função para aplicar a transformação afim
+def affine_with_params(image, points, trans_x, trans_y, scale_factor, angle):
+    # Criando a matriz de transformação afim
+    rows, cols = image.shape[:2]
+    
+    # Calculando o centro da imagem para aplicar a rotação
+    center = (cols // 2, rows // 2)
+
+    # Gerando a matriz de rotação
+    rotation_matrix = cv2.getRotationMatrix2D(center, angle, scale_factor)
+    
+    # Adicionando a translação à matriz de rotação
+    rotation_matrix[0, 2] += trans_x
+    rotation_matrix[1, 2] += trans_y
+    
+    # Aplicando a transformação afim
+    result = cv2.warpAffine(image, rotation_matrix, (cols, rows))
+    return result
+
 # Função para aplicar a transformação de perspectiva
 def perspective_transform(image, points):
     ordered_pts = order_points(np.array(points, dtype="float32"))
