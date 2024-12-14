@@ -168,7 +168,7 @@ def main():
             print(f"Imagem salva como {output_filename}")
 
             # Espera até o usuário pressionar qualquer tecla para voltar ao menu
-            print("\nPressione qualquer tecla para voltar ao menu.")
+            print("\nPressione qualquer tecla na imagem para voltar ao menu.")
             cv2.waitKey(0)
             cv2.destroyAllWindows()
         else:
