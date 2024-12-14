@@ -16,6 +16,11 @@ def select_points(event, x, y, flags, param):
         cv2.circle(temp_image, (x, y), 5, (0, 0, 255), -1)
         cv2.imshow("Selecione os pontos", temp_image)
 
+    # Verifica se foram selecionados os 4 pontos
+    if len(points) == 4:
+        print("4 pontos selecionados. Você pode agora aplicar a transformação.")
+        cv2.setMouseCallback("Selecione os pontos", lambda *args: None)  # Remove o callback após 4 pontos
+
 # Função para ordenar os pontos selecionados
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
@@ -98,7 +103,8 @@ def main():
         cv2.setMouseCallback("Selecione os pontos", select_points)
 
         print("\nSelecione os pontos na imagem com o mouse.")
-        cv2.waitKey(0)
+        while len(points) < 4:  # Aguarda até 4 pontos serem selecionados
+            cv2.waitKey(1)  # Atualiza a janela de imagem enquanto o usuário seleciona os pontos
 
         # Executa o método escolhido
         if choice == "1" and len(points) == 4:
@@ -114,7 +120,7 @@ def main():
             continue
 
         if result is not None:
-            cv2.imshow("Resultado da Retificacao", result)
+            cv2.imshow("Resultado da Retificação", result)
             cv2.imwrite("resultado_retificacao.jpeg", result)
             print("Imagem salva como resultado_retificacao.jpeg")
         else:
