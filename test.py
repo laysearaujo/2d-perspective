@@ -3,28 +3,29 @@ import numpy as np
 
 # Função para capturar os pontos do mouse
 points = []
+selection_complete = False  # Variável para controlar quando a seleção estiver completa
+
 def select_points(event, x, y, flags, param):
-    global points
-    if event == cv2.EVENT_LBUTTONDOWN:
+    global points, selection_complete, temp_image
+    if not selection_complete and event == cv2.EVENT_LBUTTONDOWN:
         points.append((x, y))
         print(f"Ponto selecionado: {(x, y)}")
-    # Desenhar os pontos e as linhas enquanto os pontos estão sendo selecionados
-    if len(points) > 0:
-        temp_image = image.copy()  # Copiar a imagem original para desenhar nela
-        # Desenhar todos os pontos já selecionados
+
+        # Desenhar os pontos e as linhas na imagem temporária
+        temp_image = image.copy()  # Restaurar a imagem original para desenhar cada vez
         for i, point in enumerate(points):
-            cv2.circle(temp_image, point, 20, (0, 0, 255), -1)  # Desenha um ponto vermelho
-        # Se houver pelo menos dois pontos, desenhar linhas entre eles
+            cv2.circle(temp_image, point, 20, (0, 0, 255), -1)  # Desenhar o ponto
         if len(points) > 1:
             for i in range(len(points) - 1):
-                cv2.line(temp_image, points[i], points[i + 1], (0, 255, 0), 10)  # Linha verde
-        # Se houver 4 pontos, desenhar o quadrado
+                cv2.line(temp_image, points[i], points[i + 1], (0, 255, 0), 2)  # Linha verde
         if len(points) == 4:
             cv2.line(temp_image, points[0], points[1], (255, 0, 0), 2)
             cv2.line(temp_image, points[1], points[2], (255, 0, 0), 2)
             cv2.line(temp_image, points[2], points[3], (255, 0, 0), 2)
             cv2.line(temp_image, points[3], points[0], (255, 0, 0), 2)
-        # Exibir a imagem com os desenhos em tempo real
+            selection_complete = True
+
+        # Atualizar a janela com os desenhos
         cv2.imshow("Imagem - Selecione 4 pontos", temp_image)
 
 # Função principal
@@ -38,15 +39,22 @@ if __name__ == "__main__":
         print(f"Erro ao carregar a imagem PNG: {e}")
         exit()
 
+    temp_image = image.copy()  # Criar uma cópia temporária para exibir os desenhos
+    original_image = image.copy()  # Manter uma versão da imagem original para desenhar o quadrado final
+
     # Exibir a imagem e capturar os pontos
-    cv2.imshow("Imagem - Selecione 4 pontos", image)
+    cv2.imshow("Imagem - Selecione 4 pontos", temp_image)
     cv2.setMouseCallback("Imagem - Selecione 4 pontos", select_points)
 
     print("Selecione 4 pontos na imagem para alinhar a perspectiva.")
-    while len(points) < 4:
+    while not selection_complete:
         cv2.waitKey(1)
 
-    cv2.destroyAllWindows()
+    # Desenhar o quadrado final na imagem original
+    cv2.line(original_image, points[0], points[1], (255, 0, 0), 2)
+    cv2.line(original_image, points[1], points[2], (255, 0, 0), 2)
+    cv2.line(original_image, points[2], points[3], (255, 0, 0), 2)
+    cv2.line(original_image, points[3], points[0], (255, 0, 0), 2)
 
     # Definindo um tamanho fixo para a imagem transformada
     dst_width = 800  # Largura desejada após a transformação
@@ -68,8 +76,10 @@ if __name__ == "__main__":
     # Aplicar a transformação de perspectiva em toda a imagem
     transformed_image = cv2.warpPerspective(image, perspective_matrix, (dst_width, dst_height))
 
-    # Exibir as imagens original e transformada
-    cv2.imshow("Imagem Original", image)
-    cv2.imshow("Imagem Retificada - Perspectiva Alinhada", transformed_image)
+    # Exibir as três janelas
+    # cv2.imshow("Imagem - Selecione 4 pontos", temp_image)  # Janela de seleção (finalizada)
+    cv2.destroyAllWindows()
+    cv2.imshow("Imagem Original com Quadrado", original_image)  # Original com o quadrado
+    cv2.imshow("Imagem Retificada - Perspectiva Alinhada", transformed_image)  # Transformada
     cv2.waitKey(0)
     cv2.destroyAllWindows()
