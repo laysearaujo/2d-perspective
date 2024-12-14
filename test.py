@@ -35,8 +35,51 @@ def order_points(pts):
     rect[3] = pts[np.argmax(diff)]  # Bottom-left
     return rect
 
-# Funções para cada método de retificação
-# 1. Retificação Perspectiva
+# Função personalizada para calcular a matriz de transformação de perspectiva
+def manual_perspective_transform(src_pts, dst_pts):
+    A = []
+    B = []
+    
+    # Verifica se os pontos de entrada estão no formato correto
+    if len(src_pts) != 4 or len(dst_pts) != 4:
+        raise ValueError("Deve haver exatamente 4 pontos de origem e 4 de destino.")
+    
+    for i in range(4):
+        x, y = src_pts[i]
+        u, v = dst_pts[i]
+        
+        # Equações de perspectiva para cada ponto
+        A.append([x, y, 1, 0, 0, 0, -x*u, -y*u])
+        A.append([0, 0, 0, x, y, 1, -x*v, -y*v])
+        B.append(u)
+        B.append(v)
+    
+    A = np.array(A, dtype="float32")
+    B = np.array(B, dtype="float32")
+    
+    # Resolvendo o sistema de equações (Ax = B)
+    M = np.linalg.lstsq(A, B, rcond=None)[0]
+    
+    # A matriz de transformação é reorganizada para uma matriz 3x3
+    matrix = np.array([
+        [M[0], M[1], M[2]],
+        [M[3], M[4], M[5]],
+        [M[6], M[7], 1]
+    ], dtype="float32")
+    
+    return matrix
+
+# Função personalizada para aplicar a transformação de perspectiva
+def warp_perspective(image, matrix, dimensions):
+    try:
+        # Usando a função warpPerspective do OpenCV para aplicar a transformação
+        result = cv2.warpPerspective(image, matrix, dimensions)
+        return result
+    except Exception as e:
+        print(f"Erro ao aplicar a transformação de perspectiva: {e}")
+        return None
+
+# Função para aplicar a transformação de perspectiva
 def perspective_transform(image, points):
     ordered_pts = order_points(np.array(points, dtype="float32"))
     width, height = 500, 500
@@ -48,61 +91,9 @@ def perspective_transform(image, points):
         [0, height - 1]
     ], dtype="float32")
 
-    matrix = cv2.getPerspectiveTransform(ordered_pts, dst_points)
-    result = cv2.warpPerspective(image, matrix, (width, height))
-    return result
-
-# 2. Retificação Afim (Affine Transform)
-def affine_transform(image, points):
-    if len(points) < 3:
-        print("A transformação afim requer exatamente 3 pontos.")
-        return None
-
-    pts_src = np.array(points[:3], dtype="float32")
-    pts_dst = np.array([
-        [0, 0],
-        [300, 0],
-        [0, 300]
-    ], dtype="float32")
-
-    matrix = cv2.getAffineTransform(pts_src, pts_dst)
-    result = cv2.warpAffine(image, matrix, (300, 300))
-    return result
-
-# Função para aplicar translação, escala e rotação na transformação afim
-def affine_with_params(image, points, trans_x, trans_y, scale_factor, angle):
-    # Validando os valores de translação, escala e rotação
-    if not isinstance(trans_x, (int, float)) or not isinstance(trans_y, (int, float)):
-        print("A translação precisa ser um número.")
-        return None
-    if not isinstance(scale_factor, (int, float)) or scale_factor <= 0:
-        print("O fator de escala precisa ser um número positivo.")
-        return None
-    if not isinstance(angle, (int, float)):
-        print("O ângulo precisa ser um número.")
-        return None
-
-    pts_src = np.array(points[:3], dtype="float32")
-    pts_dst = np.array([
-        [0, 0],
-        [300, 0],
-        [0, 300]
-    ], dtype="float32")
-    
-    matrix = cv2.getAffineTransform(pts_src, pts_dst)
-    matrix_3x3 = np.vstack([matrix, [0, 0, 1]])
-
-    # Criando matriz de rotação e escala
-    (h, w) = image.shape[:2]
-    center = (w // 2, h // 2)
-    rot_scale_matrix = cv2.getRotationMatrix2D(center, angle, scale_factor)
-    rot_scale_matrix_3x3 = np.vstack([rot_scale_matrix, [0, 0, 1]])
-    combined_matrix = np.dot(rot_scale_matrix_3x3, matrix_3x3)
-
-    combined_matrix[0, 2] += trans_x
-    combined_matrix[1, 2] += trans_y
-
-    result = cv2.warpAffine(image, combined_matrix[:2], (w, h))
+    # Calculando a matriz de transformação de perspectiva
+    matrix = manual_perspective_transform(ordered_pts, dst_points)
+    result = warp_perspective(image, matrix, (width, height))
     return result
 
 # Menu principal
@@ -140,8 +131,10 @@ def main():
         while (len(points) < 3 and choice == "2") or (len(points) < 4 and choice != "2"):  
             cv2.waitKey(1) 
 
-        # Menu para parâmetros de translação, escala e rotação para a transformação afim
-        if choice == "2":
+        # Ordenando os pontos corretamente para transformação
+        ordered_points = order_points(np.array(points, dtype="float32"))
+
+        if choice == "2" and len(points) == 3:
             try:
                 trans_x = float(input("Digite a translação no eixo X: "))
                 trans_y = float(input("Digite a translação no eixo Y: "))
@@ -151,12 +144,12 @@ def main():
                 print("Entrada inválida. Por favor, insira números válidos.")
                 continue
 
-            result = affine_with_params(image, points, trans_x, trans_y, scale_factor, angle)
+            result = affine_with_params(image, ordered_points, trans_x, trans_y, scale_factor, angle)
             output_filename = "resultado_afim.jpeg"
         
-        # Executa o método escolhido
         elif choice == "1" and len(points) == 4:
-            result = perspective_transform(image, points)
+            # Use os pontos ordenados para calcular a transformação de perspectiva
+            result = perspective_transform(image, ordered_points)
             output_filename = "resultado_perspectiva.jpeg"
         else:
             print("Seleção inválida ou pontos insuficientes!")
@@ -165,9 +158,8 @@ def main():
         if result is not None:
             cv2.imshow("Resultado da Retificação", result)
             cv2.imwrite(output_filename, result)
-            print(f"Imagem salva como {output_filename}")
+            print(f"Imagem resultante salva como {output_filename}")
 
-            # Espera até o usuário pressionar qualquer tecla para voltar ao menu
             print("\nPressione qualquer tecla na imagem para voltar ao menu.")
             cv2.waitKey(0)
             cv2.destroyAllWindows()
