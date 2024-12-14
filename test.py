@@ -1,85 +1,145 @@
 import cv2
 import numpy as np
 
-# Função para capturar os pontos do mouse
-points = []
-selection_complete = False  # Variável para controlar quando a seleção estiver completa
+global points, method_choice
+points = []  
+method_choice = None 
 
+# Função para capturar os pontos do mouse
 def select_points(event, x, y, flags, param):
-    global points, selection_complete, temp_image
-    if not selection_complete and event == cv2.EVENT_LBUTTONDOWN:
+    global points
+    if event == cv2.EVENT_LBUTTONDOWN and len(points) < 4:
         points.append((x, y))
         print(f"Ponto selecionado: {(x, y)}")
+        
+        # Desenha o ponto selecionado
+        cv2.circle(temp_image, (x, y), 5, (0, 0, 255), -1)
+        cv2.imshow("Selecione os pontos", temp_image)
 
-        # Desenhar os pontos e as linhas na imagem temporária
-        temp_image = image.copy()  # Restaurar a imagem original para desenhar cada vez
-        for i, point in enumerate(points):
-            cv2.circle(temp_image, point, 20, (0, 0, 255), -1)  # Desenhar o ponto
-        if len(points) > 1:
-            for i in range(len(points) - 1):
-                cv2.line(temp_image, points[i], points[i + 1], (0, 255, 0), 2)  # Linha verde
-        if len(points) == 4:
-            cv2.line(temp_image, points[0], points[1], (255, 0, 0), 2)
-            cv2.line(temp_image, points[1], points[2], (255, 0, 0), 2)
-            cv2.line(temp_image, points[2], points[3], (255, 0, 0), 2)
-            cv2.line(temp_image, points[3], points[0], (255, 0, 0), 2)
-            selection_complete = True
+# Função para ordenar os pontos selecionados
+def order_points(pts):
+    rect = np.zeros((4, 2), dtype="float32")
+    s = pts.sum(axis=1)
+    rect[0] = pts[np.argmin(s)]  # Top-left
+    rect[2] = pts[np.argmax(s)]  # Bottom-right
 
-        # Atualizar a janela com os desenhos
-        cv2.imshow("Imagem - Selecione 4 pontos", temp_image)
+    diff = np.diff(pts, axis=1)
+    rect[1] = pts[np.argmin(diff)]  # Top-right
+    rect[3] = pts[np.argmax(diff)]  # Bottom-left
+    return rect
 
-# Função principal
+# Funções para cada método de retificação
+# 1. Retificação Perspectiva
+def perspective_transform(image, points):
+    ordered_pts = order_points(np.array(points, dtype="float32"))
+    width, height = 500, 500  # Dimensão desejada para a saída
+
+    dst_points = np.array([
+        [0, 0],
+        [width - 1, 0],
+        [width - 1, height - 1],
+        [0, height - 1]
+    ], dtype="float32")
+
+    matrix = cv2.getPerspectiveTransform(ordered_pts, dst_points)
+    result = cv2.warpPerspective(image, matrix, (width, height))
+    return result
+
+# 2. Retificação Afin (Affine Transform)
+def affine_transform(image, points):
+    if len(points) < 3:
+        print("A transformação afim requer exatamente 3 pontos.")
+        return None
+
+    pts_src = np.array(points[:3], dtype="float32")  # Pega os 3 primeiros pontos
+    pts_dst = np.array([
+        [0, 0],
+        [300, 0],
+        [0, 300]
+    ], dtype="float32")
+
+    matrix = cv2.getAffineTransform(pts_src, pts_dst)
+    result = cv2.warpAffine(image, matrix, (300, 300))
+    return result
+
+# 3. Transformada Similaridade
+def similarity_transform(image, points):
+    if len(points) < 2:
+        print("A transformação de similaridade requer pelo menos 2 pontos.")
+        return None
+
+    scale = 1.5  # Fator de escala
+    angle = 15  # Ângulo de rotação
+
+    center = points[0]  # Usa o primeiro ponto como centro
+    matrix = cv2.getRotationMatrix2D(center, angle, scale)
+    result = cv2.warpAffine(image, matrix, (image.shape[1], image.shape[0]))
+    return result
+
+# 4. Transformada de Escala e Rotação (Manual)
+def scale_and_rotate(image, scale_factor, angle):
+    (h, w) = image.shape[:2]
+    center = (w // 2, h // 2)
+    
+    matrix = cv2.getRotationMatrix2D(center, angle, scale_factor)
+    result = cv2.warpAffine(image, matrix, (w, h))
+    return result
+
+# Menu principal
+def main():
+    global points, temp_image
+
+    # Carrega a imagem
+    image_path = "tabuleiro.jpeg"  # Altere conforme sua imagem
+    image = cv2.imread(image_path)
+    if image is None:
+        print("Erro ao carregar a imagem!")
+        return
+
+    while True:
+        print("\nEscolha o método de retificação:")
+        print("1 - Retificação Perspectiva")
+        print("2 - Transformada Afim")
+        print("3 - Transformada Similaridade")
+        print("4 - Escala e Rotação Manual")
+        print("0 - Sair")
+        
+        choice = input("Digite sua escolha: ")
+        if choice == "0":
+            break
+
+        points = []  # Limpa os pontos
+        temp_image = image.copy()
+        cv2.imshow("Selecione os pontos", temp_image)
+        cv2.setMouseCallback("Selecione os pontos", select_points)
+
+        print("\nSelecione os pontos na imagem com o mouse.")
+        cv2.waitKey(0)
+
+        # Executa o método escolhido
+        if choice == "1" and len(points) == 4:
+            result = perspective_transform(image, points)
+        elif choice == "2" and len(points) >= 3:
+            result = affine_transform(image, points)
+        elif choice == "3" and len(points) >= 2:
+            result = similarity_transform(image, points)
+        elif choice == "4":
+            scale = float(input("Fator de escala (ex: 1.2): "))
+            angle = float(input("Ângulo de rotação (graus): "))
+            result = scale_and_rotate(image, scale, angle)
+        else:
+            print("Seleção inválida ou pontos insuficientes!")
+            continue
+
+        if result is not None:
+            cv2.imshow("Resultado da Retificação", result)
+            cv2.imwrite("resultado_retificacao.jpeg", result)
+            print("Imagem salva como resultado_retificacao.jpeg")
+        else:
+            print("Não foi possível aplicar a transformação.")
+
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
 if __name__ == "__main__":
-    # Carregar a imagem PNG usando OpenCV
-    try:
-        image = cv2.imread('testando.png')  # Substitua pelo caminho do arquivo PNG
-        if image is None:
-            raise FileNotFoundError("Imagem não encontrada ou formato não suportado.")
-    except Exception as e:
-        print(f"Erro ao carregar a imagem PNG: {e}")
-        exit()
-
-    temp_image = image.copy()  # Criar uma cópia temporária para exibir os desenhos
-    original_image = image.copy()  # Manter uma versão da imagem original para desenhar o quadrado final
-
-    # Exibir a imagem e capturar os pontos
-    cv2.imshow("Imagem - Selecione 4 pontos", temp_image)
-    cv2.setMouseCallback("Imagem - Selecione 4 pontos", select_points)
-
-    print("Selecione 4 pontos na imagem para alinhar a perspectiva.")
-    while not selection_complete:
-        cv2.waitKey(1)
-
-    # Desenhar o quadrado final na imagem original
-    cv2.line(original_image, points[0], points[1], (255, 0, 0), 2)
-    cv2.line(original_image, points[1], points[2], (255, 0, 0), 2)
-    cv2.line(original_image, points[2], points[3], (255, 0, 0), 2)
-    cv2.line(original_image, points[3], points[0], (255, 0, 0), 2)
-
-    # Definindo um tamanho fixo para a imagem transformada
-    dst_width = 800  # Largura desejada após a transformação
-    dst_height = 600  # Altura desejada após a transformação
-    dst_points = [
-        (0, 0),  # Canto superior esquerdo
-        (dst_width - 1, 0),  # Canto superior direito
-        (dst_width - 1, dst_height - 1),  # Canto inferior direito
-        (0, dst_height - 1)  # Canto inferior esquerdo
-    ]
-
-    # Certificando-se que os pontos estão na ordem correta (horário ou anti-horário)
-    points = np.array(points, dtype=np.float32)
-    dst_points = np.array(dst_points, dtype=np.float32)
-
-    # Calcular a matriz de transformação de perspectiva
-    perspective_matrix = cv2.getPerspectiveTransform(points, dst_points)
-
-    # Aplicar a transformação de perspectiva em toda a imagem
-    transformed_image = cv2.warpPerspective(image, perspective_matrix, (dst_width, dst_height))
-
-    # Exibir as três janelas
-    # cv2.imshow("Imagem - Selecione 4 pontos", temp_image)  # Janela de seleção (finalizada)
-    cv2.destroyAllWindows()
-    cv2.imshow("Imagem Original com Quadrado", original_image)  # Original com o quadrado
-    cv2.imshow("Imagem Retificada - Perspectiva Alinhada", transformed_image)  # Transformada
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    main()
