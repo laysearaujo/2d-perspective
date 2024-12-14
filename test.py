@@ -71,13 +71,45 @@ def manual_perspective_transform(src_pts, dst_pts):
 
 # Função personalizada para aplicar a transformação de perspectiva
 def warp_perspective(image, matrix, dimensions):
-    try:
-        # Usando a função warpPerspective do OpenCV para aplicar a transformação
-        result = cv2.warpPerspective(image, matrix, dimensions)
-        return result
-    except Exception as e:
-        print(f"Erro ao aplicar a transformação de perspectiva: {e}")
-        return None
+    # Inicializando a imagem resultante com fundo branco
+    result = np.ones((dimensions[1], dimensions[0], 3), dtype=np.uint8) * 255
+
+    # Calculando a inversa da matriz de transformação
+    inv_matrix = np.linalg.inv(matrix)
+    
+    # Percorrendo todos os pixels da imagem de saída
+    for y in range(dimensions[1]):  # y -> altura
+        for x in range(dimensions[0]):  # x -> largura
+            # Calculando as coordenadas no espaço original da imagem
+            src_pt = np.dot(inv_matrix, np.array([x, y, 1]))
+            
+            # Normalizando as coordenadas para o sistema de coordenadas da imagem original
+            src_x, src_y = src_pt[0] / src_pt[2], src_pt[1] / src_pt[2]
+
+            # Verificando se o ponto calculado está dentro dos limites da imagem original
+            if 0 <= src_x < image.shape[1] and 0 <= src_y < image.shape[0]:
+                # Usando interpolação bilinear para obter o valor do pixel
+                src_x_int = int(src_x)
+                src_y_int = int(src_y)
+                
+                # Caso de interpolação bilinear simples
+                dx, dy = src_x - src_x_int, src_y - src_y_int
+                if src_x_int + 1 < image.shape[1] and src_y_int + 1 < image.shape[0]:
+                    top_left = image[src_y_int, src_x_int]
+                    top_right = image[src_y_int, src_x_int + 1]
+                    bottom_left = image[src_y_int + 1, src_x_int]
+                    bottom_right = image[src_y_int + 1, src_x_int + 1]
+                    
+                    # Calculando a interpolação bilinear
+                    top = (1 - dx) * top_left + dx * top_right
+                    bottom = (1 - dx) * bottom_left + dx * bottom_right
+                    pixel_value = (1 - dy) * top + dy * bottom
+                    result[y, x] = pixel_value
+                else:
+                    # Caso sem interpolação (simples atribuição de valor)
+                    result[y, x] = image[src_y_int, src_x_int]
+
+    return result
 
 # Função para aplicar a transformação afim
 def affine_with_params(image, points, trans_x, trans_y, scale_factor, angle):
